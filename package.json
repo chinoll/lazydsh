@@ -1,0 +1,43 @@
+{
+  "name": "lazydsh",
+  "version": "0.1.0",
+  "description": "A personally maintained plugin for DeepSeek Harness.",
+  "license": "GPL-3.0-only",
+  "author": "chinoll",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "src/",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=24.0.0",
+    "dsh": ">=0.2.2-rc.3 <0.2.3-0"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "~4.1.0"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "scripts": {
+    "check": "node --check src/index.js",
+    "prepack": "npm run check"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chinoll/lazydsh.git"
+  },
+  "homepage": "https://github.com/chinoll/lazydsh#readme",
+  "bugs": {
+    "url": "https://github.com/chinoll/lazydsh/issues"
+  }
+}
