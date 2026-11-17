@@ -52,18 +52,16 @@ npm ci
 npm pack
 ```
 
-在 DSH 的插件管理页面安装生成的 `lazydsh-0.2.1.tgz`。桌面版通过桌面插件管理器管理 profile；CLI 用户可使用 `dsh plugin add /path/to/lazydsh-0.2.1.tgz`。
+在 DSH 的插件管理页面安装生成的 `lazydsh-0.2.2.tgz`。桌面版通过桌面插件管理器管理 profile；CLI 用户可使用 `dsh plugin add /path/to/lazydsh-0.2.2.tgz`。
 
-## 开发与验证
+## 开发与构建
 
 ```sh
 npm ci
 npm run check
-npx playwright install chromium
-npm run test:browser
 ```
 
-`check` 覆盖来源分类、请求凭据、真实 DSH Session 的历史保留和上下文隔离、官方 Conversation assembler 的历史回放与实时更新，并构建浏览器入口。浏览器测试覆盖默认折叠、键盘操作、独立开关、深色／浅色和窄屏布局，截图保存在 `dist/preview/`。可通过 `PLAYWRIGHT_CHROMIUM_EXECUTABLE` 指定已有 Chromium。
+`check` 检查宿主和 Gemini 插件入口的 JavaScript 语法，并构建浏览器入口。
 
 源码入口：`src/index.js`（链接记录）、`src/providers/gemini/index.js`（原生 Gemini）、`src/client/index.jsx`（统一界面）；构建产物 `lib/client.js` 随安装包分发。第三方来源和许可证见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 
