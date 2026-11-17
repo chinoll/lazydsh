@@ -52,7 +52,7 @@ npm ci
 npm pack
 ```
 
-在 DSH 的插件管理页面安装生成的 `lazydsh-0.2.0.tgz`。桌面版通过桌面插件管理器管理 profile；CLI 用户可使用 `dsh plugin add /path/to/lazydsh-0.2.0.tgz`。
+在 DSH 的插件管理页面安装生成的 `lazydsh-0.2.1.tgz`。桌面版通过桌面插件管理器管理 profile；CLI 用户可使用 `dsh plugin add /path/to/lazydsh-0.2.1.tgz`。
 
 ## 开发与验证
 
@@ -65,7 +65,13 @@ npm run test:browser
 
 `check` 覆盖来源分类、请求凭据、真实 DSH Session 的历史保留和上下文隔离、官方 Conversation assembler 的历史回放与实时更新，并构建浏览器入口。浏览器测试覆盖默认折叠、键盘操作、独立开关、深色／浅色和窄屏布局，截图保存在 `dist/preview/`。可通过 `PLAYWRIGHT_CHROMIUM_EXECUTABLE` 指定已有 Chromium。
 
-源码入口：`src/index.js`（链接记录）、`src/gemini/index.js`（原生 Gemini）、`src/client/index.jsx`（统一界面）；构建产物 `lib/client.js` 随安装包分发。第三方来源和许可证见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+源码入口：`src/index.js`（链接记录）、`src/providers/gemini/index.js`（原生 Gemini）、`src/client/index.jsx`（统一界面）；构建产物 `lib/client.js` 随安装包分发。第三方来源和许可证见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+
+### Provider 目录
+
+每个提供方的完整接入独立放在 `src/providers/<provider>/`，包含入口、配置、请求转换、传输和流式响应处理。其中 `adapter.js` 负责协议适配。当前 Gemini 的全部实现位于 `src/providers/gemini/`；后续提供方可以建立同级目录，再添加对应的包导出和 bundle 配置条目。
+
+公开插件入口仍为 `lazydsh/gemini`，目录调整不需要修改已有 profile 或会话配置。
 
 ## 许可证
 

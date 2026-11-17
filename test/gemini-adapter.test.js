@@ -4,9 +4,9 @@ import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { once } from 'node:events';
 import { BlockAssembler, createToolResultMessage, createUserMessage } from '@deepseek-ai/dsh-llm';
-import { GoogleAdapter, Config } from '../src/gemini/index.js';
-import { plainConfig, resolveConfig } from '../src/gemini/config.js';
-import { toContents } from '../src/gemini/content.js';
+import { GoogleAdapter, Config } from '../src/providers/gemini/index.js';
+import { plainConfig, resolveConfig } from '../src/providers/gemini/config.js';
+import { toContents } from '../src/providers/gemini/content.js';
 
 const MODEL = 'gemini-3.1-pro-preview';
 const USER = { role: 'user', content: [{ type: 'text', text: '查询资料并计算结果。' }] };

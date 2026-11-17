@@ -5,9 +5,9 @@ import { Context, symbols } from '@deepseek-ai/cordis';
 import { SystemPrompt } from '@deepseek-ai/dsh-system-prompt';
 import { ToolsService } from '@deepseek-ai/dsh-tools';
 import * as Native from '@deepseek-ai/dsh-tool-executor-native';
-import { resolveConfig } from '../src/gemini/config.js';
-import { installSearchToolFilter } from '../src/gemini/search-tools.js';
-import { GoogleAdapter } from '../src/gemini/adapter.js';
+import { resolveConfig } from '../src/providers/gemini/config.js';
+import { installSearchToolFilter } from '../src/providers/gemini/search-tools.js';
+import { GoogleAdapter } from '../src/providers/gemini/adapter.js';
 
 const MODEL = 'gemini-4-argon';
 const selection = { provider: 'google-native', model: MODEL };

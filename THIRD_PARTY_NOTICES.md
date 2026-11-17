@@ -1,6 +1,6 @@
 # Third-party source
 
-`src/gemini/` incorporates the GPL-3.0-only adapter from
+`src/providers/gemini/` incorporates the GPL-3.0-only adapter from
 [chinoll/dsh-gemini](https://github.com/chinoll/dsh-gemini), based on the locally
 maintained 0.1.5 source. It is maintained in this repository as part of lazydsh.
 Native replay metadata remains compatible; the standalone text source footer
