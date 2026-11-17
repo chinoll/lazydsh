@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Footer } from '../../src/client/index.jsx';
+import { Footer } from '../../src/client/links.jsx';
 import { styles } from '../../src/client/styles.js';
 const rows = [
  {url:'https://example.com/guide',title:'API 使用说明（测试来源）',state:'read',detail:'fetched'},

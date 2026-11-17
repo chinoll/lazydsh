@@ -5,9 +5,8 @@ export const styles = `
 .lazydsh-links summary::-webkit-details-marker { display: none; }
 .lazydsh-links summary:hover, .lazydsh-links a:hover { text-decoration: underline; text-underline-offset: 3px; }
 .lazydsh-links summary:focus-visible, .lazydsh-links a:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
-.lazydsh-chevron { display: inline-block; font-size: 18px; transform: rotate(-90deg); }
+.lazydsh-chevron { display: inline-block; flex-shrink: 0; transform: rotate(-90deg); }
 .lazydsh-links[open] > summary .lazydsh-chevron, .lazydsh-unread[open] > summary .lazydsh-chevron { transform: none; }
-.lazydsh-note { margin: 8px 0 16px; max-width: 70ch; }
 .lazydsh-links section { margin: 16px 0; }
 .lazydsh-links h4 { font-size: inherit; font-weight: 600; margin: 0 0 6px; }
 .lazydsh-links ul { list-style: none; padding: 0; margin: 0; }

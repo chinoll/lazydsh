@@ -1,30 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-only
-import { useSyncExternalStore } from 'react';
-import { sourcesDefinition, sourcesKey } from '../definition.js';
-import { RelatedLinks } from './related-links.jsx';
-import { styles } from './styles.js';
+import { apply as applyLinks, inject as linksInject } from './links.jsx';
+import { apply as applyModels, inject as modelsInject } from '../../vendor/ui-settings-models/src/client/index.ts';
 
-export const inject = ['slots', 'uiConversation', 'configForms'];
-const empty = Object.freeze([]);
-
-export function Footer({ turn, settings }) {
-  const source = turn.data.source(sourcesKey);
-  const rows = useSyncExternalStore(source.subscribe, source.getSnapshot) ?? empty;
-  const config = useSyncExternalStore(settings.subscribe.bind(settings), settings.getSnapshot.bind(settings));
-  if (config.status !== 'ready' || config.value?.showRelatedLinks === false) return null;
-  return <RelatedLinks rows={rows} />;
-}
-
+export const inject = [...new Set([...linksInject, ...modelsInject])];
 export function apply(ctx) {
+  applyLinks(ctx);
   ctx.effect(() => {
     const style = document.createElement('style');
-    style.textContent = styles;
+    style.dataset.plugin = 'lazydsh-models';
+    style.textContent = __LAZYDSH_MODELS_CSS__;
     document.head.append(style);
     return () => style.remove();
   });
-  ctx.uiConversation.events.register(sourcesDefinition);
-  ctx.slots.inject('conversation.chat.turnTail', () => ctx.slots.register({
-    name: 'conversation.chat.turnTail', id: 'lazydsh-related-links', order: 90,
-    inject: () => ({ settings: ctx.configForms.get('lazydsh') }),
-  }, Footer));
+  applyModels(ctx);
 }

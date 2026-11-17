@@ -1,3 +1,11 @@
 - insert:
     - id: lazydsh
       name: lazydsh
+    - id: llm-google-native
+      name: lazydsh/gemini
+      config:
+        googleSearch: true
+
+# One Models settings section, extended with the native Gemini editor.
+- id: ui-settings-models
+  disabled: true

@@ -24,6 +24,10 @@ try {
   await summary.focus();
   await page.keyboard.press('Enter');
   assert.equal(await root.evaluate(el => el.open), true);
+  assert.equal(await summary.locator('svg').count(), 1);
+  assert.equal(await root.locator('.lazydsh-note').count(), 0);
+  assert.equal(await root.getByText('网页内容已读入', { exact: true }).count(), 0);
+  assert.equal(await root.getByText('仅搜索摘要已读入，未读取正文', { exact: true }).count(), 0);
   assert.equal(await unread.evaluate(el => el.open), false);
   assert.equal(await root.locator('a:visible').count(), 3);
   await unread.locator('summary').focus();
