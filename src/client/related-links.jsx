@@ -13,14 +13,18 @@ export function RelatedLinks({ rows }) {
     <p className="lazydsh-note">按工具记录区分；搜索摘要不等于网页正文。读入表示内容进入请求或 Google 确认使用，不代表模型逐字阅读。</p>
     {[['read', '已读入的来源'], ['unread', '未读入正文的链接'], ['unknown', '无法确认']].map(([state, title]) => {
       const items = rows.filter(row => row.state === state);
-      return items.length ? <section key={state} aria-label={title}>
-        <h4>{title} <span>({items.length})</span></h4>
-        <ul>{items.map(row => <li key={row.url}>
+      if (!items.length) return null;
+      const links = <ul>{items.map(row => <li key={row.url}>
           <a href={row.url} target="_blank" rel="noopener noreferrer" title={row.url}>{row.title}</a>
           <span className="lazydsh-url">{row.url}</span>
           <span className="lazydsh-status">{labels[row.detail] ?? labels.unknown}</span>
-        </li>)}</ul>
-      </section> : null;
+        </li>)}</ul>;
+      return <section key={state} aria-label={title}>
+        {state === 'unread' ? <details className="lazydsh-unread">
+          <summary><span className="lazydsh-chevron" aria-hidden="true">⌄</span>{title} <span>({items.length})</span></summary>
+          {links}
+        </details> : <><h4>{title} <span>({items.length})</span></h4>{links}</>}
+      </section>;
     })}
   </details>;
 }
