@@ -1,6 +1,6 @@
 {
   "name": "lazydsh",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "A personally maintained plugin for DeepSeek Harness.",
   "license": "GPL-3.0-only",
   "author": "chinoll",
@@ -32,7 +32,9 @@
     "@deepseek-ai/dsh-attachment": ">=0.2.2-rc.1 <0.2.3-0",
     "@deepseek-ai/dsh-credentials": ">=0.2.2-rc.1 <0.2.3-0",
     "@deepseek-ai/dsh-launch-environment": ">=0.2.2-rc.1 <0.2.3-0",
-    "@deepseek-ai/dsh-llm": ">=0.2.2-rc.1 <0.2.3-0"
+    "@deepseek-ai/dsh-llm": ">=0.2.2-rc.1 <0.2.3-0",
+    "@deepseek-ai/dsh-client-connection": "0.2.2-rc.3",
+    "@deepseek-ai/dsh-storage-domain": "0.2.2-rc.3"
   },
   "dsh": {
     "bundle": {
@@ -46,7 +48,10 @@
         "@deepseek-ai/dsh-client-ui-conversation",
         "@deepseek-ai/dsh-client-ui-chat",
         "@deepseek-ai/dsh-client-locale",
-        "@deepseek-ai/dsh-api-remotes"
+        "@deepseek-ai/dsh-api-remotes",
+        "@deepseek-ai/dsh-client-connection",
+        "@deepseek-ai/dsh-client-ui-workspace",
+        "@deepseek-ai/dsh-api-session-controller"
       ]
     }
   },
@@ -64,7 +69,8 @@
     "url": "https://github.com/chinoll/lazydsh/issues"
   },
   "dependencies": {
-    "@deepseek-ai/schemastery": "~3.19.0"
+    "@deepseek-ai/schemastery": "~3.19.0",
+    "zod": "4.6.6"
   },
   "devDependencies": {
     "esbuild": "^0.25.0"

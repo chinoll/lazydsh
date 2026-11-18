@@ -4,6 +4,7 @@
 import z from '@deepseek-ai/schemastery';
 import { appendPluginRecord } from '@deepseek-ai/dsh-session';
 import { createReceiptTracker } from './receipts.js';
+import { applyVersions } from './versions/index.js';
 
 export const name = 'lazydsh';
 export const inject = ['llm', 'settings'];
@@ -13,6 +14,7 @@ export const Config = z.object({
 }).default({ showRelatedLinks: true }).volatile();
 
 export function apply(ctx) {
+  applyVersions(ctx);
   const tracker = createReceiptTracker();
   ctx.on('session/event', (session, event) => tracker.observe(session, event));
   ctx.on('llm/stream', async function* (options, next) {

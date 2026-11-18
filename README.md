@@ -2,6 +2,14 @@
 
 自己维护的 DeepSeek Harness 插件。公开仓库：<https://github.com/chinoll/lazydsh>。
 
+## 回答版本与重新生成
+
+从 0.3.0 开始，普通对话每轮回答下方自动提供 **重新生成** 按钮，无需开启设置。有多个版本时显示左右箭头和 `1 / 2` 版本编号，点击切换。
+
+重新生成保留原提示词和附件，使用当前选中的模型，从该轮开始之前的上下文重新回答；不会带入被替换的回答或其工具结果。每个版本的后续对话独立保留，版本关系持久保存，重启后仍可切换。相关链接随所选版本显示。
+
+底层使用 DSH 原生会话分支保存版本，因此这些分支也会出现在会话列表中，不需要手动 fork。生成中或有排队消息时暂时禁用操作；包含中途追加提示的轮次暂不支持重新生成。子代理会话不显示这些按钮，已归档会话需要先恢复。
+
 ## 原生 Gemini
 
 从 0.2.0 开始，原 `dsh-gemini` 的功能直接内置在 lazydsh 中，不再依赖单独安装该插件：
@@ -52,7 +60,7 @@ npm ci
 npm pack
 ```
 
-在 DSH 的插件管理页面安装生成的 `lazydsh-0.2.2.tgz`。桌面版通过桌面插件管理器管理 profile；CLI 用户可使用 `dsh plugin add /path/to/lazydsh-0.2.2.tgz`。
+在 DSH 的插件管理页面安装生成的 `lazydsh-0.3.0.tgz`。桌面版通过桌面插件管理器管理 profile；CLI 用户可使用 `dsh plugin add /path/to/lazydsh-0.3.0.tgz`。
 
 ## 开发与构建
 
@@ -63,7 +71,7 @@ npm run check
 
 `check` 检查宿主和 Gemini 插件入口的 JavaScript 语法，并构建浏览器入口。
 
-源码入口：`src/index.js`（链接记录）、`src/providers/gemini/index.js`（原生 Gemini）、`src/client/index.jsx`（统一界面）；构建产物 `lib/client.js` 随安装包分发。第三方来源和许可证见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+源码入口：`src/index.js`（插件入口）、`src/versions/`（版本管理）、`src/providers/gemini/index.js`（原生 Gemini）、`src/client/index.jsx`（统一界面）；构建产物 `lib/client.js` 随安装包分发。第三方来源和许可证见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 
 ### Provider 目录
 
