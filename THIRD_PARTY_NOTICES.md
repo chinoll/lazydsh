@@ -19,6 +19,12 @@ styles are reused from that release. The stock Models section is disabled by
 the bundle patch while this compatible section is mounted, to keep one section
 and one original Edit button. Removing the bundle restores the stock section.
 
+`vendor/ui-chat-actions/` reuses the message action row, date helpers, and
+adapted user-message renderer from `@deepseek-ai/dsh-client-ui-chat@0.2.2-rc.3`
+(MIT). The adapted renderer preserves native content factories, attachments,
+source decorations and message clocks, adding inline version actions and editing.
+Its upstream package metadata is included in that directory.
+
 ## MIT license
 
 Copyright belongs to the upstream DeepSeek project contributors.

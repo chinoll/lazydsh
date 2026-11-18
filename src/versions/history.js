@@ -33,3 +33,16 @@ export function selectionOf(value) {
   return { provider: value.provider, model: value.model,
     ...(value.reasoningEffort === undefined ? {} : { reasoningEffort: value.reasoningEffort }) };
 }
+
+/** Replace editable text while retaining attachment and reference blocks. */
+export function editedPromptContent(content, text) {
+  if (text === undefined) return structuredClone(content);
+  const result = [];
+  let replaced = false;
+  for (const block of content) {
+    if (block.type !== 'text') result.push(structuredClone(block));
+    else if (!replaced) { result.push({ type: 'text', text }); replaced = true; }
+  }
+  if (!replaced) result.unshift({ type: 'text', text });
+  return result;
+}

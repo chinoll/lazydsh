@@ -2,7 +2,7 @@
 import { z } from 'zod';
 import { defineDomain, domainTable } from '@deepseek-ai/dsh-storage-domain';
 import { createUserMessage } from '@deepseek-ai/dsh-llm';
-import { promptTurns, selectionOf } from './history.js';
+import { promptTurns, selectionOf, editedPromptContent } from './history.js';
 import { registerVersionRpc } from './rpc.js';
 
 const memberSchema = z.object({
@@ -14,7 +14,8 @@ export const versionDomain = defineDomain({
   tables: { groups: domainTable(z.object({ members: z.array(memberSchema) })) },
 });
 const requestSchema = z.object({ sessionId: z.string().min(1).max(256) });
-const regenerateSchema = requestSchema.extend({ turn: z.number().int().nonnegative(), requestId: z.string().uuid() });
+const regenerateSchema = requestSchema.extend({ turn: z.number().int().nonnegative(), requestId: z.string().uuid(),
+  text: z.string().max(1_000_000).optional() });
 const selectSchema = requestSchema.extend({ turn: z.number().int().nonnegative(), targetSessionId: z.string().min(1).max(256) });
 const fail = message => { const error = new Error(message); error.userMessage = message; throw error; };
 
@@ -49,7 +50,8 @@ export function createVersions(ctx, table) {
         const { group } = groupOf(turn.prompt.id);
         const members = group?.members ?? [{ sessionId, turn: turn.turn, promptId: turn.prompt.id }];
         const index = Math.max(0, members.findIndex(member => member.promptId === turn.prompt.id));
-        return [turn.turn, { index, members: members.map(member => ({ sessionId: member.sessionId, turn: member.turn })),
+        return [turn.turn, { index, promptId: turn.prompt.id, answerIds: turn.answers,
+          members: members.map(member => ({ sessionId: member.sessionId, turn: member.turn })),
           // Replaying later steering before its tool/assistant boundary would change the prompt.
           canRegenerate: !turn.steered,
           ...(turn.steered ? { reason: '这轮包含中途追加的提示，暂不支持整轮重新生成。' } : {}),
@@ -63,6 +65,10 @@ export function createVersions(ctx, table) {
       const turn = turns.find(item => item.turn === request.turn && item.complete);
       if (!turn) fail('找不到这条提示词，或回答尚未结束。');
       if (turn.steered) fail('这轮包含中途追加的提示，暂不支持整轮重新生成。');
+      const content = editedPromptContent(turn.prompt.content, request.text);
+      if (request.text !== undefined && !request.text.trim() && !content.some(block => block.type === 'image' || block.type === 'file')) {
+        fail('请输入消息内容。');
+      }
       const { key } = groupOf(turn.prompt.id);
       if (locks.has(key)) {
         await locks.get(key).catch(() => {});
@@ -83,7 +89,7 @@ export function createVersions(ctx, table) {
         const created = await ctx.sessionController.fork({ sessionId: request.sessionId, atSeq: turn.startSeq - 1 });
         const child = ctx.agents.get(created.sessionId);
         if (!child) fail('新版本创建后未就绪，请重新打开会话。');
-        const prompt = createUserMessage({ content: structuredClone(turn.prompt.content),
+        const prompt = createUserMessage({ content,
           source: { kind: 'user', ...(turn.prompt.source.clientTimeZone ? { clientTimeZone: turn.prompt.source.clientTimeZone } : {}) } });
         const member = { sessionId: created.sessionId, promptId: prompt.id, turn: turn.turn,
           requestId: request.requestId, createdAt: Date.now() };
