@@ -4,7 +4,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 const options = {
   entryPoints: ['src/client/index.jsx'], outfile: 'lib/client.js', bundle: true, write: false,
   format: 'cjs', platform: 'browser', target: 'es2022', jsx: 'automatic',
-  external: ['react', 'react/jsx-runtime', '@deepseek-ai/dsh-client-store', '@deepseek-ai/dsh-client-ui-primitives'],
+  external: ['react-dom', 'react', 'react/jsx-runtime', '@deepseek-ai/dsh-client-store', '@deepseek-ai/dsh-client-ui-primitives'],
   define: { 'process.env.NODE_ENV': '"production"' },
   banner: { js: 'window.__ModuleLoader__.load({id:"lazydsh",factory:(require)=>{var module={exports:{}};var exports=module.exports;' },
   footer: { js: 'return module.exports;}});' },
