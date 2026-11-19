@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import { seam } from './geometry.js';
 import { createGridController, maxAxis, panelId } from './state.js';
 import { gridStyles } from './styles.js';
+import { headerSlot, installPaneHeaders } from './header.jsx';
 
 function GridIcon() {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 3v18M3 12h18"/></svg>;
@@ -38,11 +39,11 @@ export function RetainedConversation({ sessionId, sessions, SessionProvider, ren
   </SessionProvider>;
 }
 
-export function GridConversation({ useSession, useConversation, renderFactorySlot }) {
+export function GridConversation({ useSession, useConversation, renderFactorySlot, renderSlot }) {
   const session = useSession(s => s), conversation = useConversation(s => s);
   const active = conversation.activeTargets.size > 0 || (!session.blank && !session.awaitingFirstTurn) || session.running;
   const settling = !active && session.openState === 'loading';
-  return renderFactorySlot('conversation.content', { variant: 'embedded', phase: settling ? 'settling' : active ? 'active' : 'hero', hero: !active && !settling });
+  return <>{renderSlot(headerSlot, {})}{renderFactorySlot('conversation.content', { variant: 'embedded', phase: settling ? 'settling' : active ? 'active' : 'hero', hero: !active && !settling })}</>;
 }
 
 function Divider({ dimension, index, edge, grid, surface }) {
@@ -100,16 +101,15 @@ export function SessionGrid({ grid, sessions, useSessions, SessionProvider, rend
     {state.notice && <div className="lazydsh-grid-notice" role="status">{state.notice}</div>}
     <div className="lazydsh-grid-viewport">
       <div className="lazydsh-grid-surface" ref={surface} style={{ minWidth: state.columns * 260, minHeight: state.rows * 200 }}>
-        {selected.map((sessionId, index) => <section key={sessionId ?? `empty-${index}`} style={{ left: `${state.rects[index].x * 100}%`, top: `${state.rects[index].y * 100}%`, width: `${state.rects[index].width * 100}%`, height: `${state.rects[index].height * 100}%` }} ref={node => { paneRefs.current[index] = node; }} className="lazydsh-grid-pane" data-active={state.active === index} aria-label={`分屏 ${index + 1}`}
+        {selected.map((sessionId, index) => <section key={sessionId ?? `empty-${index}`} style={{ left: `${state.rects[index].x * 100}%`, top: `${state.rects[index].y * 100}%`, width: `${state.rects[index].width * 100}%`, height: `${state.rects[index].height * 100}%` }} ref={node => { paneRefs.current[index] = node; }} className="lazydsh-grid-pane" data-active={state.active === index} data-grid-session={sessionId ?? undefined} aria-label={`分屏 ${index + 1}`}
           onKeyDownCapture={event => focusPane(event, index)} onKeyUpCapture={event => { if (event.key === 'Tab') focusPane(event, index); }} onClickCapture={event => focusPane(event, index)}>
-          <div className="lazydsh-grid-pane-header">
-            <select aria-label={`分屏 ${index + 1} 的会话`} value={sessionId ?? ''} title={catalog.byId[sessionId]?.displayTitle} onChange={e => grid.assign(index, e.target.value || null)}>
+          {!sessionId && <div className="lazydsh-grid-pane-header">
+            <select aria-label={`分屏 ${index + 1} 的会话`} value="" onChange={e => grid.assign(index, e.target.value || null)}>
               <option value="">选择会话…</option>
-              {sessionId && !catalog.byId[sessionId] && <option value={sessionId}>未找到会话 · {sessionId.slice(-8)}</option>}
               {catalog.ids.filter(id => catalog.byId[id]?.origin !== 'subagent').map(id => <option key={id} value={id} disabled={id !== sessionId && selected.includes(id)}>{catalog.byId[id].displayTitle || catalog.byId[id].title || id}{catalog.byId[id].running ? ' · 生成中' : ''}</option>)}
             </select>
-            <button type="button" data-grid-close="" title="关闭分屏" aria-label={`关闭分屏 ${index + 1}`} onClick={() => grid.close(index)}><CloseIcon /></button>
-          </div>
+          </div>}
+          <button type="button" className="lazydsh-grid-close" data-grid-close="" title="关闭分屏" aria-label={`关闭分屏 ${index + 1}`} onClick={() => grid.close(index)}><CloseIcon /></button>
           <div className="lazydsh-grid-pane-body">
             {sessionId ? <RetainedConversation key={sessionId} grid={grid} sessionId={sessionId} sessions={sessions} SessionProvider={SessionProvider} renderSlot={renderSlot} /> : <div className="lazydsh-grid-empty">在上方选择会话</div>}
           </div>
@@ -120,8 +120,8 @@ export function SessionGrid({ grid, sessions, useSessions, SessionProvider, rend
   </div>;
 }
 
-// Keep DSH's resident header, sidebar and their native session binding. Only the
-// conversation body is covered; a portal preserves the grid's own React scope.
+// Keep DSH's shell and sidebar. Each pane owns a complete native conversation
+// header/body; the singleton conversation stays hidden until the grid closes.
 function GridHost({ grid, usePanelInfo, ...props }) {
   const state = useSyncExternalStore(grid.subscribe, grid.getSnapshot);
   const panel = usePanelInfo(s => s.activePanelId);
@@ -132,11 +132,6 @@ function GridHost({ grid, usePanelInfo, ...props }) {
     if (!state.enabled || panel !== null) return;
     const mount = document.createElement('div'); mount.className = 'lazydsh-grid-mount';
     let parent, root;
-    const measure = () => {
-      const header = root?.querySelector('header[data-window-drag]');
-      if (header && parent) mount.style.top = `${header.getBoundingClientRect().bottom - parent.getBoundingClientRect().top}px`;
-    };
-    const sizing = new ResizeObserver(measure);
     const attach = () => {
       if (root?.isConnected && mount.parentElement === parent) return;
       const body = [...document.querySelectorAll('[data-conversation-content]')].find(node => !node.closest('.lazydsh-session-grid'));
@@ -151,13 +146,11 @@ function GridHost({ grid, usePanelInfo, ...props }) {
       // the portal outside its scope wrappers so focus, clicks and drafts stay mounted.
       parent.setAttribute('data-lazydsh-grid-container', ''); root.setAttribute('data-lazydsh-split', '');
       if (mount.parentElement !== parent) parent.append(mount);
-      sizing.disconnect(); sizing.observe(parent);
-      const header = root.querySelector('header[data-window-drag]'); if (header) sizing.observe(header);
-      measure(); setHost(mount);
+      setHost(mount);
     };
     attach();
     const observer = new MutationObserver(attach); observer.observe(document.body, { childList: true, subtree: true });
-    return () => { observer.disconnect(); sizing.disconnect(); root?.removeAttribute('data-lazydsh-split'); parent?.removeAttribute('data-lazydsh-grid-container'); mount.remove(); setHost(null); };
+    return () => { observer.disconnect(); root?.removeAttribute('data-lazydsh-split'); parent?.removeAttribute('data-lazydsh-grid-container'); mount.remove(); setHost(null); };
   }, [state.enabled, panel]);
   useEffect(() => {
     const previous = previousSession.current; previousSession.current = current;
@@ -175,7 +168,8 @@ export function applySessionGrid(ctx) {
   ctx.slots.inject('main', () => ctx.slots.register({ name: 'main', key: panelId, inject: () => ({ grid }) }, GridEntry));
   ctx.slots.inject('shell.overlay', function* () {
     yield ctx.slots.register({ name: 'shell.overlay', id: panelId, children: { 'lazydsh.grid.conversation': { kind: 'single', scope: 'session' } }, inject: () => ({ grid, sessions: ctx.sessions }) }, GridHost);
-    yield ctx.slots.register({ name: 'lazydsh.grid.conversation' }, GridConversation);
+    yield ctx.slots.register({ name: 'lazydsh.grid.conversation', children: { [headerSlot]: { kind: 'single', scope: 'session-maybe' } } }, GridConversation);
+    yield installPaneHeaders(ctx);
   });
   ctx.slots.inject('conversation.session.header.utilities', () => ctx.slots.register({ name: 'conversation.session.header.utilities', id: panelId, order: 300, inject: () => ({ grid }) }, OpenGrid));
   ctx.slots.inject('contextMenu.icon', () => ctx.slots.register({ name: 'contextMenu.icon', key: panelId }, GridIcon));
