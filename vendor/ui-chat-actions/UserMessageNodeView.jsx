@@ -21,7 +21,7 @@ export function UserMessageNodeView({ node, renderFactorySlot, loadImage, render
     ...(data.skillNames === undefined ? {} : { skillNames: data.skillNames }),
   }), [data.referenceLabels, data.skillNames]);
   return <div className="lazydsh-user-row">
-    {renderSlotChain('conversation.chat.user.before', { source: data.source, kind: node.kind }, { fallback: null })}
+    {renderSlotChain?.('conversation.chat.user.before', { source: data.source, kind: node.kind }, { fallback: null })}
     {editor}
     {renderFactorySlot('conversation.chat.user.content', {
       content: editor ? { ...prepared, text: '' } : prepared,

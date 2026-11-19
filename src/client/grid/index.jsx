@@ -12,10 +12,6 @@ function PaneIcon({ close }) {
 function OpenGrid({ grid, sessionId }) {
   return <button type="button" className="lazydsh-grid-open" title="会话分屏" aria-label="会话分屏" onClick={() => grid.open(sessionId)}><GridIcon /></button>;
 }
-function GridMenuItem({ grid, sessionId, useMenuOpenState }) {
-  const [, close] = useMenuOpenState();
-  return <button type="button" role="menuitem" onClick={() => { close(false); grid.open(sessionId); }}>在分屏中打开</button>;
-}
 
 // Each occurrence holds its own controller reference; releasing a pane never stops its Host Agent.
 export function RetainedConversation({ sessionId, sessions, SessionProvider, renderSlot }) {
@@ -124,7 +120,11 @@ export function applySessionGrid(ctx) {
     yield ctx.slots.register({ name: 'lazydsh.grid.conversation' }, GridConversation);
   });
   ctx.slots.inject('conversation.session.header.utilities', () => ctx.slots.register({ name: 'conversation.session.header.utilities', id: panelId, order: 300, inject: () => ({ grid }) }, OpenGrid));
-  ctx.slots.inject('sidebar.workspaces.session.menu.item', () => ctx.slots.register({ name: 'sidebar.workspaces.session.menu.item', id: panelId, order: 300, inject: () => ({ grid }) }, GridMenuItem));
+  ctx.slots.inject('contextMenu.icon', () => ctx.slots.register({ name: 'contextMenu.icon', key: panelId }, GridIcon));
+  ctx.effect(() => ctx.contextMenus.register({
+    id: panelId, target: 'session', order: 350,
+    resolve: ({ sessionId }) => [{ id: 'split', label: '分屏', icon: { key: panelId }, run: () => grid.open(sessionId) }],
+  }));
   ctx.slots.inject('sidebar.panellist', () => ctx.slots.register({ name: 'sidebar.panellist', id: panelId, label: '会话分屏', order: 300 }, GridIcon));
   return grid;
 }

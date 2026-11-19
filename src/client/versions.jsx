@@ -200,9 +200,10 @@ export function applyVersionActions(ctx, grid) {
     name: 'conversation.chat.assistant-actions', id: 'lazydsh-versions', order: 100,
     inject: sessionId => ({ source: controller.sourceFor(sessionId) }),
   }, VersionActions));
+  // Keyed occupants need a distinct priority; the native renderer retains
+  // ownership of its child slots even while our user renderer shadows it.
   ctx.slots.inject('conversation.chat.node', () => ctx.slots.register({
-    name: 'conversation.chat.node', key: 'user', locale: 'chat',
-    children: { 'conversation.chat.user.before': { kind: 'chain', scope: 'session' } },
+    name: 'conversation.chat.node', key: 'user', priority: -100, locale: 'chat',
     inject: sessionId => ({ source: controller.sourceFor(sessionId) }),
   }, UserVersionMessage));
 }

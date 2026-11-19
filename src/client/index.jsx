@@ -4,7 +4,7 @@ import { apply as applyModels, inject as modelsInject } from '../../vendor/ui-se
 import { applyVersionActions } from './versions.jsx';
 import { applySessionGrid } from './grid/index.jsx';
 
-export const inject = [...new Set([...linksInject, ...modelsInject, 'connection', 'sessions', 'uiWorkspace', 'layout'])];
+export const inject = [...new Set([...linksInject, ...modelsInject, 'connection', 'sessions', 'uiWorkspace', 'layout', 'contextMenus'])];
 export function apply(ctx) {
   applyLinks(ctx);
   const grid = applySessionGrid(ctx);
