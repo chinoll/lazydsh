@@ -4,7 +4,7 @@ import { UserMessageNodeView } from '../../vendor/ui-chat-actions/UserMessageNod
 
 const initial = Object.freeze({ turns: {}, ready: false, error: null });
 
-export function createVersionController(ctx) {
+export function createVersionController(ctx, grid) {
   const sources = new Map();
   const call = async (action, payload) => {
     const result = await ctx.connection.rpc.call('/api', `lazydsh/versions/${action}`, payload);
@@ -33,11 +33,11 @@ export function createVersionController(ctx) {
         const result = await call('regenerate', { sessionId, turn, requestId, ...(text === undefined ? {} : { text }) });
         await source.refresh();
         await ctx.sessions.refresh();
-        ctx.uiWorkspace.openSession(result.sessionId);
+        if (!grid?.navigate(sessionId, result.sessionId)) ctx.uiWorkspace.openSession(result.sessionId);
       },
       async select(turn, targetSessionId) {
         const result = await call('select', { sessionId, turn, targetSessionId });
-        ctx.uiWorkspace.openSession(result.sessionId);
+        if (!grid?.navigate(sessionId, result.sessionId)) ctx.uiWorkspace.openSession(result.sessionId);
       },
     };
     sources.set(sessionId, source);
@@ -188,8 +188,8 @@ export const versionStyles = `
 .lazydsh-editor-actions button:disabled { opacity: .4; cursor: default; }
 `;
 
-export function applyVersionActions(ctx) {
-  const controller = createVersionController(ctx);
+export function applyVersionActions(ctx, grid) {
+  const controller = createVersionController(ctx, grid);
   ctx.effect(() => {
     const style = document.createElement('style');
     style.textContent = versionStyles;
