@@ -2,7 +2,10 @@
 import { automaticLayout, resizeRects, tile, validRects } from './geometry.js';
 export const panelId = 'lazydsh-grid';
 export const maxAxis = 6;
-const storageKey = 'lazydsh.session-grid.v1';
+const storageKey = 'lazydsh.session-groups.v2';
+const legacyStorageKey = 'lazydsh.session-grid.v1';
+const groupName = value => typeof value === 'string' ? value.trim().slice(0, 80) : '';
+const layoutOf = ({ rows, columns, count, cells, rects, active }) => ({ rows, columns, count, cells, rects, active });
 const axis = value => Number.isInteger(value) && value >= 1 && value <= maxAxis ? value : 1;
 export function restoreGrid(raw) {
   const rows = axis(raw?.rows ?? 1), columns = axis(raw?.columns ?? 2);
@@ -14,17 +17,33 @@ export function restoreGrid(raw) {
     seen.add(id); return id;
   });
   const rects = validRects(raw?.rects, count) ? raw.rects : tile(count, rows, columns);
-  return { rows, columns, count, cells, rects, active: 0, enabled: false, notice: '' };
+  return { rows, columns, count, cells, rects, active: Number.isInteger(raw?.active) ? Math.max(0, Math.min(raw.active, count - 1)) : 0, enabled: false, notice: '' };
+}
+export function restoreGroups(raw, legacy) {
+  const seen = new Set(), groups = [];
+  if (Array.isArray(raw?.groups)) {
+    for (const group of raw.groups) {
+      if (typeof group?.id !== 'string' || !group.id || group.id.length > 128 || seen.has(group.id)) continue;
+      seen.add(group.id);
+      groups.push({ id: group.id, name: groupName(group.name) || `分屏组 ${groups.length + 1}`, layout: layoutOf(restoreGrid(group.layout)) });
+    }
+  } else if (restoreGrid(legacy).cells.some(Boolean)) {
+    groups.push({ id: 'imported-grid', name: '分屏组 1', layout: layoutOf(restoreGrid(legacy)) });
+  }
+  const selected = groups.find(group => group.id === raw?.activeGroupId) ?? groups[0];
+  return { ...restoreGrid(selected?.layout), groups, groupId: selected?.id ?? null };
 }
 export function createGridController(ctx, storage) {
   if (storage === undefined) { try { storage = globalThis.localStorage; } catch {} }
-  let saved;
+  let saved, legacy;
   try { saved = JSON.parse(storage?.getItem(storageKey) ?? 'null'); } catch {}
-  let snapshot = restoreGrid(saved);
+  try { legacy = JSON.parse(storage?.getItem(legacyStorageKey) ?? 'null'); } catch {}
+  let snapshot = restoreGroups(saved, legacy);
   const listeners = new Set(), loaded = new Map();
   function publish(patch) {
     snapshot = { ...snapshot, ...patch };
-    try { storage?.setItem(storageKey, JSON.stringify(snapshot)); } catch {}
+    if (snapshot.groupId) snapshot.groups = snapshot.groups.map(group => group.id === snapshot.groupId ? { ...group, layout: layoutOf(snapshot) } : group);
+    try { storage?.setItem(storageKey, JSON.stringify({ version: 2, activeGroupId: snapshot.groupId, groups: snapshot.groups })); } catch {}
     for (const fn of listeners) fn();
   }
   function showActive() {
@@ -41,6 +60,42 @@ export function createGridController(ctx, storage) {
   const controller = {
     getSnapshot: () => snapshot,
     subscribe: fn => { listeners.add(fn); return () => listeners.delete(fn); },
+    createGroup(sessionId) {
+      const catalog = ctx.sessions?.list?.getSnapshot();
+      sessionId ??= catalog?.ids.find(id => catalog.byId[id]?.retainedBy?.mainView > 0);
+      const fresh = restoreGrid();
+      if (sessionId) fresh.cells[0] = sessionId;
+      let number = 1;
+      while (snapshot.groups.some(group => group.name === `分屏组 ${number}`)) number++;
+      const id = globalThis.crypto?.randomUUID?.() ?? `group-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const group = { id, name: `分屏组 ${number}`, layout: layoutOf(fresh) };
+      publish({ ...fresh, groups: [...snapshot.groups, group], groupId: id, enabled: true });
+      showActive();
+      return id;
+    },
+    selectGroup(id) {
+      const group = snapshot.groups.find(group => group.id === id);
+      if (!group) return;
+      publish({ ...restoreGrid(group.layout), groupId: id, enabled: true }); showActive();
+    },
+    renameGroup(id, name) {
+      name = groupName(name);
+      if (!name || !snapshot.groups.some(group => group.id === id)) return false;
+      publish({ groups: snapshot.groups.map(group => group.id === id ? { ...group, name } : group) });
+      return true;
+    },
+    deleteGroup(id) {
+      const index = snapshot.groups.findIndex(group => group.id === id);
+      if (index < 0) return;
+      const groups = snapshot.groups.filter(group => group.id !== id);
+      if (snapshot.groupId !== id) { publish({ groups }); return; }
+      const next = groups[Math.min(index, groups.length - 1)];
+      publish({ ...restoreGrid(next?.layout), groups, groupId: next?.id ?? null, enabled: Boolean(next) && snapshot.enabled });
+      if (snapshot.enabled) showActive();
+    },
+    resume() {
+      if (snapshot.groupId) controller.selectGroup(snapshot.groupId); else controller.createGroup();
+    },
     ready(sessionId, reference) {
       loaded.set(sessionId, reference);
       if (snapshot.enabled && snapshot.cells[snapshot.active] === sessionId && ctx.layout.panelInfo.getSnapshot().activePanelId === null) showActive();
@@ -69,6 +124,7 @@ export function createGridController(ctx, storage) {
     },
     equalize() { publish({ rects: tile(snapshot.count, snapshot.rows, snapshot.columns) }); },
     open(sessionId) {
+      if (!snapshot.enabled || !snapshot.groupId) { controller.createGroup(sessionId); return; }
       if (!sessionId && !snapshot.cells.slice(0, snapshot.count).some(Boolean)) {
         const catalog = ctx.sessions?.list?.getSnapshot();
         sessionId = catalog?.ids.find(id => catalog.byId[id]?.retainedBy?.mainView > 0);

@@ -5,6 +5,7 @@ import { seam } from './geometry.js';
 import { createGridController, maxAxis, panelId } from './state.js';
 import { gridStyles } from './styles.js';
 import { headerSlot, installPaneHeaders } from './header.jsx';
+import { GroupSidebar } from './groups.jsx';
 
 function GridIcon() {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 3v18M3 12h18"/></svg>;
@@ -77,6 +78,7 @@ export function SessionGrid({ grid, sessions, useSessions, SessionProvider, rend
   const state = useSyncExternalStore(grid.subscribe, grid.getSnapshot), catalog = useSessions(s => s);
   const surface = useRef(null), paneRefs = useRef([]);
   const count = state.count, selected = state.cells.slice(0, count);
+  const currentGroup = state.groups.find(group => group.id === state.groupId);
   useEffect(() => { paneRefs.current[state.active]?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' }); }, [state.active]);
   const currentPreset = state.count === state.rows * state.columns ? `${state.rows}x${state.columns}` : 'auto';
   const focusPane = (event, index) => { if (!event.target.closest('[data-grid-close]')) grid.focus(index); };
@@ -91,6 +93,7 @@ export function SessionGrid({ grid, sessions, useSessions, SessionProvider, rend
   });
   return <div className="lazydsh-session-grid">
     <div className="lazydsh-grid-toolbar" role="group" aria-label="布局操作">
+      <span className="lazydsh-grid-group-title" title={currentGroup?.name}>{currentGroup?.name}</span>
       <select aria-label="分屏布局" value={currentPreset === 'auto' || presets.some(([value]) => value === currentPreset) ? currentPreset : 'custom'} onChange={event => {
         if (['custom', 'auto'].includes(event.target.value)) return; const [rows, columns] = event.target.value.split('x').map(Number); grid.layout(rows, columns);
       }}>{currentPreset === 'auto' && <option value="auto">{state.count} 分屏</option>}{presets.map(([value, label]) => <option key={value} value={value}>{label}</option>)}<option value="custom">自定义</option></select>
@@ -159,7 +162,7 @@ function GridHost({ grid, usePanelInfo, ...props }) {
   return host && state.enabled && panel === null ? createPortal(<SessionGrid grid={grid} {...props} />, host) : null;
 }
 function GridEntry({ grid }) {
-  useEffect(() => { grid.open(); }, [grid]);
+  useEffect(() => { grid.resume(); }, [grid]);
   return null;
 }
 export function applySessionGrid(ctx) {
@@ -175,8 +178,12 @@ export function applySessionGrid(ctx) {
   ctx.slots.inject('contextMenu.icon', () => ctx.slots.register({ name: 'contextMenu.icon', key: panelId }, GridIcon));
   ctx.effect(() => ctx.contextMenus.register({
     id: panelId, target: 'session', order: 350,
-    resolve: ({ sessionId }) => [{ id: 'split', label: '分屏', icon: { key: panelId }, run: () => grid.open(sessionId) }],
+    resolve: ({ sessionId }) => [
+      { id: 'split', label: '分屏', icon: { key: panelId }, run: () => grid.open(sessionId) },
+      { id: 'split-group', label: '新建分屏组', icon: { key: panelId }, run: () => grid.createGroup(sessionId) },
+    ],
   }));
+  ctx.slots.inject('sidebar.footer.action', () => ctx.slots.register({ name: 'sidebar.footer.action', id: 'lazydsh-groups', order: 300, inject: () => ({ grid, layout: ctx.layout }) }, GroupSidebar));
   ctx.slots.inject('sidebar.panellist', () => ctx.slots.register({ name: 'sidebar.panellist', id: panelId, label: '会话分屏', order: 300 }, GridIcon));
   return grid;
 }
